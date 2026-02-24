@@ -24,20 +24,48 @@ const Register = () => {
     }));
   };
 
-  const handleRegister = async (e) => {
+const handleRegister = async (e) => {
     e.preventDefault();
+
+    // 1. Validation check for terms
     if(!formData.agreeTerms) {
         alert("Please agree to the Terms & Conditions");
         return;
     }
+
     setIsLoading(true);
     
-    // Simulating API Registration
-    setTimeout(() => {
+    try {
+      // 2. Real API Call to your local backend
+      const response = await fetch('http://localhost:5000/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fullName: formData.fullName,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 3. Success Logic
+        alert(`Account created successfully for ${formData.fullName}!`);
+        navigate('/login');
+      } else {
+        // 4. Error Logic (e.g., "User already exists")
+        alert(data.message || "Registration failed");
+      }
+    } catch (error) {
+      // 5. Network Error Logic
+      console.error("Connection Error:", error);
+      alert("Could not connect to the server. Is your backend running?");
+    } finally {
       setIsLoading(false);
-      alert(`Account created successfully for ${formData.fullName}!`);
-      navigate('/login');
-    }, 1500);
+    }
   };
 
   return (

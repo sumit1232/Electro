@@ -24,16 +24,43 @@ const Login = () => {
     }));
   };
 
-  const handleLogin = async (e) => {
+const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulating API Call
-    setTimeout(() => {
+    try {
+      // 1. Call your local Express API
+      const response = await fetch('http://localhost:5000/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // 2. SUCCESS: Save user info so the app "remembers" them
+        // We store it as a string because localStorage only accepts strings
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        alert(`Welcome back, ${data.user.fullName}!`);
+        navigate('/shop'); 
+      } else {
+        // 3. FAIL: Show the error message from the backend (e.g., "User not found")
+        alert(data.message || "Invalid credentials");
+      }
+    } catch (error) {
+      // 4. NETWORK ERROR: Backend is likely turned off
+      console.error("Login error:", error);
+      alert("Cannot connect to server. Did you run 'npm run dev' in the backend?");
+    } finally {
       setIsLoading(false);
-      alert(`Welcome back, ${formData.email}!`);
-      navigate('/shop'); // Redirect to shop after success
-    }, 1500);
+    }
   };
 
   return (
