@@ -17,7 +17,7 @@ const Homepage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products?limit=8');
+        const response = await axios.get('http://localhost:5000/api/products?limit=12');
         // dummyjson returns { products: [...], total: 100, ... }
         setProducts(response.data.products);
       } catch (error) {
@@ -36,11 +36,11 @@ const Homepage = () => {
       <div className="hidden lg:block border-b bg-white border-gray-100 px-12 py-2">
         <div className="flex justify-between items-center text-sm">
           <div className="flex gap-4 text-gray-500">
-            <a href="#" className="hover:text-blue-600">Help</a>
-            <span>/</span>
-            <a href="#" className="hover:text-blue-600">Support</a>
-            <span>/</span>
-            <a href="#" className="hover:text-blue-600">Contact</a>
+            <a href="#" className="hover:text-blue-600"></a>
+            <span></span>
+            <a href="#" className="hover:text-blue-600"></a>
+            <span></span>
+            <a href="#" className="hover:text-blue-600"></a>
           </div>
           <div className="text-gray-600">
             Call Us: <a href="tel:01234567890" className="hover:text-blue-600">(+012) 1234 567890</a>

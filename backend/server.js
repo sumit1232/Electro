@@ -36,6 +36,10 @@ app.get('/', (req, res) => {
   res.send('Electro Backend API is Running...');
 });
 
+app.get('/contact', (req, res) => {
+  res.send('Electro Contact API Running......');
+});
+
 // REGISTRATION ROUTE
 app.post('/api/register', async (req, res) => {
   try {
