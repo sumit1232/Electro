@@ -1,12 +1,9 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-// Import your page components
 import ShopPage from './components/ShopPage';
 import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
 import ContactPage from './Pages/ContactPage';
-// Assuming your main Layout (Header/Navbar/Footer) is a component
-import Navbar from './components/Navbar';
 import Homepage from './components/Homepage';
 
 
@@ -15,7 +12,6 @@ const App = () => {
   return (
     <>
     <Router>
-      <Navbar /> 
 
       <Routes>
         {/* Default Route: Redirect to Shop or home */}

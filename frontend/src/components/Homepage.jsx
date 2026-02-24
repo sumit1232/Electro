@@ -1,14 +1,34 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom'; // Added for routing
+import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { 
   ShoppingBag, Search, Heart, Shuffle, ShoppingCart, 
-  Menu, Phone, User, Globe, HelpCircle, LifeBuoy, 
-  Truck, RefreshCcw, CreditCard, Lock, Newspaper, Eye, Star 
+  Menu, Phone, User, RefreshCcw, Truck, LifeBuoy, 
+  CreditCard, Lock, Newspaper, Eye, Star 
 } from 'lucide-react';
+import axios from 'axios';
 
 const Homepage = () => {
-  // FIX: Defined the missing state for the category dropdown
+  const [products, setProducts] = useState([]);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // FIX: useEffect cannot be async directly. 
+  // We define an internal async function instead.
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get('https://dummyjson.com/products?limit=8');
+        // dummyjson returns { products: [...], total: 100, ... }
+        setProducts(response.data.products);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <div className="font-sans text-gray-800">
@@ -165,17 +185,21 @@ const Homepage = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-          {[1, 2, 3, 4].map((item) => (
-            <ProductCard key={item} />
-          ))}
-        </div>
+        {loading ? (
+          <div className="text-center py-20 text-xl">Loading products...</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+            {products.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        )}
       </section>
     </div>
   );
 }
 
-// --- Sub-components ---
+// --- Sub-components (Updated to accept props) ---
 
 const IconButton = ({ icon }) => (
   <button type="button" className="p-3 border rounded-full text-gray-400 hover:text-blue-600 hover:border-blue-600 transition">
@@ -208,11 +232,17 @@ const TabButton = ({ label, active }) => (
   </button>
 );
 
-const ProductCard = () => (
+const ProductCard = ({ product }) => (
   <div className="group border rounded-2xl overflow-hidden hover:shadow-xl transition-all duration-300">
     <div className="relative aspect-square bg-gray-50 flex items-center justify-center overflow-hidden">
-      <img src="https://via.placeholder.com/300" alt="Product" className="w-full group-hover:scale-105 transition-transform" />
-      <div className="absolute top-4 left-4 bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded">NEW</div>
+      <img 
+        src={product?.thumbnail || "https://via.placeholder.com/300"} 
+        alt={product?.title} 
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform" 
+      />
+      <div className="absolute top-4 left-4 bg-blue-600 text-white text-xs font-bold py-1 px-3 rounded">
+        {product?.discountPercentage > 10 ? 'SALE' : 'NEW'}
+      </div>
       <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
         <button type="button" className="bg-white p-3 rounded-full shadow-lg hover:bg-blue-600 hover:text-white transition">
           <Eye size={20} />
@@ -220,18 +250,24 @@ const ProductCard = () => (
       </div>
     </div>
     <div className="p-6 text-center">
-      <p className="text-xs text-blue-600 font-bold mb-2">SMARTPHONE</p>
-      <h3 className="font-bold mb-3">Apple iPad Mini G2356</h3>
+      <p className="text-xs text-blue-600 font-bold mb-2 uppercase">{product?.category}</p>
+      <h3 className="font-bold mb-3 truncate px-2">{product?.title}</h3>
       <div className="flex justify-center gap-1 mb-4 text-yellow-400">
-        <Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} fill="currentColor" /><Star size={14} />
+        {[...Array(5)].map((_, i) => (
+          <Star key={i} size={14} fill={i < Math.round(product?.rating || 0) ? "currentColor" : "none"} />
+        ))}
       </div>
       <div className="mb-4">
-        <span className="text-gray-400 line-through mr-2">$1,250</span>
-        <span className="text-blue-600 text-xl font-bold">$1,050</span>
+        <span className="text-gray-400 line-through mr-2">
+          ${(product?.price * 1.2).toFixed(2)}
+        </span>
+        <span className="text-blue-600 text-xl font-bold">${product?.price}</span>
       </div>
+      <Link to="/cart">
       <button type="button" className="w-full border-2 border-blue-600 text-blue-600 py-3 rounded-full font-bold flex items-center justify-center gap-2 hover:bg-blue-600 hover:text-white transition-colors">
         <ShoppingCart size={18} /> Add To Cart
       </button>
+      </Link>
     </div>
   </div>
 );
