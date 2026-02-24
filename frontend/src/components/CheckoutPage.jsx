@@ -1,38 +1,44 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ShoppingBag, Search, Heart, ShoppingCart, 
-  Menu, Phone, RefreshCcw, Send, LifeBuoy, CreditCard, Lock, Newspaper, ChevronRight
+  Menu, Phone, RefreshCcw, Send, LifeBuoy, CreditCard, Lock, Newspaper, ChevronRight,
+  X, ArrowLeft 
 } from 'lucide-react';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   
-  // 1. CART DATA - EXACTLY SAME AS CART PAGE
-  const [cartItems, setCartItems] = useState([
-    { 
-      id: 1, 
-      name: 'Apple iPad Mini', 
-      model: 'G2356', 
-      price: 299.00, 
-      quantity: 1, 
-      image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=200&h=200&fit=crop'
-    },
-    { 
-      id: 2, 
-      name: 'Samsung Galaxy Tab', 
-      model: 'S9 Ultra', 
-      price: 899.00, 
-      quantity: 1, 
-      image: 'https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?q=80&w=200&h=200&fit=crop'
-    }
-  ]);
-
-  // 2. CART CALCULATIONS - IDENTICAL TO CART PAGE
+  // Load cart from localStorage
+  const [cartItems, setCartItems] = useState([]);
+  
   const SHIPPING_COST = 3.00;
   const FREE_SHIPPING_THRESHOLD = 1000.00;
 
+  // Load cart from localStorage
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      setCartItems(JSON.parse(savedCart));
+    }
+  }, []);
+
+  // Save cart changes to localStorage
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+    }
+  }, [cartItems]);
+
+  // Form state
+  const [formData, setFormData] = useState({
+    firstName: '', lastName: '', address: '', city: '', 
+    zip: '', mobile: '', email: '', paymentMethod: 'bank', createAccount: false
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Cart calculations
   const subtotal = useMemo(() => 
     cartItems.reduce((acc, item) => acc + (item.price * item.quantity), 0), [cartItems]
   );
@@ -43,18 +49,10 @@ const CheckoutPage = () => {
 
   const total = useMemo(() => subtotal + shippingCost, [subtotal, shippingCost]);
 
-  // 3. FORM STATE
-  const [formData, setFormData] = useState({
-    firstName: '', lastName: '', address: '', city: '', 
-    zip: '', mobile: '', email: '', paymentMethod: 'bank', createAccount: false
-  });
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // 4. CART HANDLERS (SAME AS CART PAGE)
+  // Cart handlers
   const updateQuantity = useCallback((id, delta) => {
     setCartItems(prev => prev.map(item => 
-      item.id === id 
+      item._id === id || item.id === id
         ? { ...item, quantity: Math.max(1, item.quantity + delta) }
         : item
     ));
@@ -62,9 +60,10 @@ const CheckoutPage = () => {
 
   const clearCart = useCallback(() => {
     setCartItems([]);
+    localStorage.removeItem('cart');
   }, []);
 
-  // 5. FORM HANDLERS
+  // Form handlers
   const handleInputChange = useCallback((e) => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({
@@ -77,7 +76,6 @@ const CheckoutPage = () => {
     e.preventDefault();
     setIsSubmitting(true);
 
-    // Simulate API call
     setTimeout(() => {
       console.log('✅ ORDER PLACED:', {
         customer: formData,
@@ -88,10 +86,8 @@ const CheckoutPage = () => {
         orderId: `ORD-${Date.now()}`
       });
 
-      clearCart(); // Clear cart after successful order
+      clearCart();
       setIsSubmitting(false);
-      
-      // Redirect to success page
       navigate('/order-success', { 
         state: { orderId: `ORD-${Date.now()}`, total } 
       });
@@ -102,30 +98,15 @@ const CheckoutPage = () => {
 
   return (
     <div className="font-sans text-gray-700 bg-white min-h-screen">
-      {/* Topbar */}
       <Topbar />
-
-      {/* Header */}
-      <Header subtotal={subtotal} />
-
-      {/* Navbar */}
+      <Header subtotal={subtotal} cartCount={cartItems.length} />
       <Navbar isCategoryOpen={isCategoryOpen} setIsCategoryOpen={setIsCategoryOpen} />
-
-      {/* Hero Section */}
-      <HeroSection />
-
-      {/* Service Features */}
-      <ServiceFeatures />
-
-      {/* Checkout Form */}
+      
       <div className="bg-gray-50 py-16">
         <div className="container mx-auto px-6 lg:px-12 max-w-7xl">
           {hasItems ? (
             <form onSubmit={handleSubmit} className="flex flex-col lg:flex-row gap-12">
-              {/* Billing Details */}
               <BillingForm formData={formData} onChange={handleInputChange} />
-              
-              {/* Order Summary */}
               <OrderSummary 
                 cartItems={cartItems}
                 subtotal={subtotal}
@@ -134,6 +115,7 @@ const CheckoutPage = () => {
                 formData={formData}
                 onChange={handleInputChange}
                 isSubmitting={isSubmitting}
+                updateQuantity={updateQuantity}
               />
             </form>
           ) : (
@@ -145,7 +127,8 @@ const CheckoutPage = () => {
   );
 };
 
-// ✅ SUB-COMPONENTS WITH CART LOGIC
+// ✅ ALL MISSING COMPONENTS DEFINED:
+
 const Topbar = () => (
   <div className="hidden lg:block border-b border-gray-100 px-12 py-2 bg-gray-50">
     <div className="container mx-auto flex justify-between items-center text-xs">
@@ -168,7 +151,7 @@ const Topbar = () => (
   </div>
 );
 
-const Header = ({ subtotal }) => (
+const Header = ({ subtotal, cartCount }) => (
   <div className="container mx-auto px-6 lg:px-12 py-8">
     <div className="flex flex-wrap items-center justify-between gap-6">
       <Link to="/" className="flex items-center text-4xl font-black text-blue-600 tracking-tighter">
@@ -184,8 +167,13 @@ const Header = ({ subtotal }) => (
 
       <div className="flex items-center space-x-4">
         <IconButton Icon={Heart} />
-        <Link to="/cart" className="flex items-center space-x-3 border-2 border-blue-600 rounded-full px-6 py-2.5 bg-blue-50 text-blue-600 font-bold hover:bg-blue-600 hover:text-white transition-all">
+        <Link to="/cart" className="flex items-center space-x-3 border-2 border-blue-600 rounded-full px-6 py-2.5 bg-blue-50 text-blue-600 font-bold hover:bg-blue-600 hover:text-white transition-all relative">
           <ShoppingCart size={20} />
+          {cartCount > 0 && (
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+              {cartCount}
+            </span>
+          )}
           <span>${subtotal.toFixed(2)}</span>
         </Link>
       </div>
@@ -211,39 +199,11 @@ const Navbar = ({ isCategoryOpen, setIsCategoryOpen }) => (
       <div className="flex-1 flex justify-center space-x-10 font-bold text-xs uppercase tracking-[0.2em]">
         <Link to="/" className="hover:text-orange-400 py-4 transition">Home</Link>
         <Link to="/shop" className="hover:text-orange-400 py-4 transition">Shop</Link>
+        <Link to="/cart" className="hover:text-orange-400 py-4 transition">Cart</Link>
         <Link to="/checkout" className="text-orange-400 py-4 border-b-4 border-orange-400">Checkout</Link>
       </div>
     </div>
   </nav>
-);
-
-const HeroSection = () => (
-  <div className="bg-slate-900 py-20 text-center relative overflow-hidden">
-    <div className="absolute top-0 left-0 w-full h-full opacity-10">
-      <img src="https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=1200" className="w-full h-full object-cover" alt="bg" />
-    </div>
-    <div className="relative z-10">
-      <h1 className="text-6xl font-black text-white mb-4 italic tracking-tighter">SECURE CHECKOUT</h1>
-      <div className="flex justify-center items-center text-gray-400 font-bold text-sm uppercase tracking-widest">
-        <Link to="/" className="hover:text-white">Home</Link>
-        <ChevronRight size={16} className="mx-3 text-orange-500" />
-        <span className="text-white">Payment & Billing</span>
-      </div>
-    </div>
-  </div>
-);
-
-const ServiceFeatures = () => (
-  <div className="container mx-auto px-6 lg:px-12 py-10">
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-      <ServiceBox Icon={RefreshCcw} title="30 Days Return" desc="Money back guarantee" />
-      <ServiceBox Icon={Send} title="Free Shipping" desc="On all global orders" />
-      <ServiceBox Icon={LifeBuoy} title="24/7 Support" desc="Expert assistance" />
-      <ServiceBox Icon={CreditCard} title="Gift Cards" desc="Save on every order" />
-      <ServiceBox Icon={Lock} title="Encrypted" desc="100% Secure Checkout" />
-      <ServiceBox Icon={Newspaper} title="Daily News" desc="Tech updates" />
-    </div>
-  </div>
 );
 
 const BillingForm = ({ formData, onChange }) => (
@@ -296,7 +256,8 @@ const OrderSummary = ({
   total, 
   formData, 
   onChange, 
-  isSubmitting 
+  isSubmitting,
+  updateQuantity 
 }) => (
   <div className="w-full lg:w-5/12">
     <div className="bg-gray-900 text-white p-10 rounded-[2.5rem] shadow-2xl sticky top-28 overflow-hidden">
@@ -306,10 +267,17 @@ const OrderSummary = ({
       
       <div className="space-y-4 mb-8 max-h-64 overflow-y-auto">
         {cartItems.map(item => (
-          <div key={item.id} className="flex justify-between items-center bg-white/5 p-4 rounded-xl">
-            <div className="max-w-[200px]">
-              <p className="font-bold text-white truncate">{item.name}</p>
-              <p className="text-xs text-gray-400">Qty: {item.quantity} • ${item.price.toFixed(2)}/unit</p>
+          <div key={item._id || item.id} className="flex justify-between items-center bg-white/5 p-4 rounded-xl">
+            <div className="flex items-center space-x-3 max-w-[200px]">
+              <img 
+                src={item.thumbnail || item.image || "https://via.placeholder.com/60"} 
+                alt={item.title || item.name}
+                className="w-12 h-12 object-cover rounded-xl"
+              />
+              <div>
+                <p className="font-bold text-white truncate text-sm">{item.title || item.name}</p>
+                <p className="text-xs text-gray-400">Qty: {item.quantity}</p>
+              </div>
             </div>
             <span className="font-black text-orange-500">${(item.price * item.quantity).toFixed(2)}</span>
           </div>
@@ -331,7 +299,6 @@ const OrderSummary = ({
         </div>
       </div>
 
-      {/* Payment Methods */}
       <div className="mt-10 space-y-4">
         <PaymentOption 
           isActive={formData.paymentMethod === 'bank'}
@@ -377,9 +344,14 @@ const EmptyCart = () => (
     <ShoppingCart size={64} className="mx-auto mb-6 text-gray-300" />
     <h2 className="text-3xl font-black text-gray-900 mb-4">No Items in Cart</h2>
     <p className="text-gray-500 mb-8 max-w-md mx-auto">Your cart is empty. Add items to proceed with checkout.</p>
-    <Link to="/cart" className="inline-flex items-center bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700">
-      Go to Cart
-    </Link>
+    <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+      <Link to="/cart" className="inline-flex items-center bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700">
+        Go to Cart
+      </Link>
+      <Link to="/" className="inline-flex items-center bg-gray-900 text-white px-10 py-4 rounded-2xl font-bold hover:bg-gray-800">
+        Continue Shopping
+      </Link>
+    </div>
   </div>
 );
 
@@ -395,16 +367,6 @@ const CategoryItem = ({ label, count }) => (
     <span className="font-bold text-sm group-hover:text-blue-600">{label}</span>
     <span className="bg-gray-100 text-gray-400 text-[10px] font-black px-2 py-1 rounded-md">{count}</span>
   </li>
-);
-
-const ServiceBox = ({ Icon, title, desc }) => (
-  <div className="p-6 flex flex-col items-center text-center bg-white rounded-3xl border border-gray-100 hover:shadow-lg transition-all group">
-    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-4 group-hover:bg-blue-600 group-hover:text-white transition-all">
-      <Icon size={24} />
-    </div>
-    <h6 className="font-black uppercase text-[10px] tracking-widest mb-1">{title}</h6>
-    <p className="text-[10px] font-bold text-gray-400">{desc}</p>
-  </div>
 );
 
 const InputGroup = ({ label, name, type = "text", placeholder = "", required = false, value, onChange }) => (

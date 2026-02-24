@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Search, ShoppingBag, Heart, ShoppingCart, 
@@ -6,38 +6,29 @@ import {
 } from 'lucide-react';
 
 const CartPage = () => {
-  const [cartItems, setCartItems] = useState([
-    { 
-      id: 1, 
-      name: 'Apple iPad Mini', 
-      model: 'G2356', 
-      price: 299.00, 
-      quantity: 1, 
-      image: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?q=80&w=200&h=200&fit=crop'
-    },
-    { 
-      id: 2, 
-      name: 'Samsung Galaxy Tab', 
-      model: 'S9 Ultra', 
-      price: 899.00, 
-      quantity: 1, 
-      image: 'https://images.unsplash.com/photo-1589739900243-4b52cd9b104e?q=80&w=200&h=200&fit=crop'
-    },
-    { 
-      id: 3, 
-      name: 'Beats Studio Pro', 
-      model: 'Wireless', 
-      price: 349.00, 
-      quantity: 1, 
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=200&h=200&fit=crop'
-    }
-  ]);
-
+  const [cartItems, setCartItems] = useState([]);
   const [couponCode, setCouponCode] = useState('');
   const [isCatOpen, setIsCatOpen] = useState(false);
   
   const SHIPPING_COST = 3.00;
   const FREE_SHIPPING_THRESHOLD = 1000.00;
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      setCartItems(JSON.parse(savedCart));
+    }
+  }, []);
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+    } else {
+      localStorage.removeItem('cart');
+    }
+  }, [cartItems]);
 
   // Memoized calculations
   const subtotal = useMemo(() => {
@@ -53,14 +44,14 @@ const CartPage = () => {
   // Event handlers
   const updateQuantity = useCallback((id, delta) => {
     setCartItems(prev => prev.map(item => 
-      item.id === id 
+      item._id === id || item.id === id 
         ? { ...item, quantity: Math.max(1, item.quantity + delta) }
         : item
     ));
   }, []);
 
   const removeItem = useCallback((id) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems(prev => prev.filter(item => item._id !== id && item.id !== id));
   }, []);
 
   const clearCart = useCallback(() => {
@@ -70,7 +61,7 @@ const CartPage = () => {
   const applyCoupon = useCallback((e) => {
     e.preventDefault();
     console.log('Applying coupon:', couponCode);
-    // Add real coupon logic here
+    alert('Coupon functionality coming soon!');
   }, [couponCode]);
 
   const hasItems = cartItems.length > 0;
@@ -79,6 +70,7 @@ const CartPage = () => {
     <div className="min-h-screen bg-gray-50 font-sans text-gray-700">
       <Header 
         subtotal={subtotal}
+        cartCount={cartItems.length}
         isCatOpen={isCatOpen}
         setIsCatOpen={setIsCatOpen}
       />
@@ -112,8 +104,9 @@ const CartPage = () => {
   );
 };
 
-// ✅ ALL COMPONENTS DEFINED BELOW
-const Header = ({ subtotal, isCatOpen, setIsCatOpen }) => (
+// ✅ ALL COMPONENTS DEFINED:
+
+const Header = ({ subtotal, cartCount, isCatOpen, setIsCatOpen }) => (
   <div className="bg-white border-b">
     <div className="container mx-auto px-6 lg:px-12 py-6 grid grid-cols-12 gap-4 items-center">
       <div className="col-span-6 lg:col-span-3">
@@ -131,10 +124,15 @@ const Header = ({ subtotal, isCatOpen, setIsCatOpen }) => (
 
       <div className="col-span-6 lg:col-span-3 flex justify-end space-x-4 items-center">
         <button className="p-3 text-gray-400 hover:text-blue-600"><Heart size={22} /></button>
-        <div className="flex items-center space-x-3 bg-blue-600 text-white px-5 py-2.5 rounded-full shadow-lg shadow-blue-200">
+        <Link to="/cart" className="flex items-center space-x-3 bg-blue-600 text-white px-5 py-2.5 rounded-full shadow-lg shadow-blue-200 relative">
           <ShoppingCart size={20} />
+          {cartCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold">
+              {cartCount}
+            </span>
+          )}
           <span className="font-bold">${subtotal.toFixed(2)}</span>
-        </div>
+        </Link>
       </div>
     </div>
   </div>
@@ -170,7 +168,7 @@ const Navigation = ({ isCatOpen, setIsCatOpen }) => (
 
 const Breadcrumbs = () => (
   <div className="flex items-center space-x-4 mb-10">
-    <Link to="/shop" className="flex items-center text-sm font-bold text-blue-600 hover:underline">
+    <Link to="/" className="flex items-center text-sm font-bold text-blue-600 hover:underline">
       <ArrowLeft size={16} className="mr-1" /> Continue Shopping
     </Link>
     <div className="h-px flex-1 bg-gray-200"></div>
@@ -205,7 +203,6 @@ const CartContent = ({
   </div>
 );
 
-// ✅ MISSING COMPONENTS NOW DEFINED:
 const CartTable = ({ cartItems, updateQuantity, removeItem }) => (
   <table className="w-full text-left">
     <thead>
@@ -219,7 +216,7 @@ const CartTable = ({ cartItems, updateQuantity, removeItem }) => (
     <tbody className="divide-y divide-gray-100">
       {cartItems.map((item) => (
         <CartItemRow 
-          key={item.id}
+          key={item._id || item.id}
           item={item}
           updateQuantity={updateQuantity}
           removeItem={removeItem}
@@ -233,24 +230,33 @@ const CartItemRow = ({ item, updateQuantity, removeItem }) => (
   <tr className="hover:bg-gray-50/30 transition-colors">
     <td className="px-8 py-6">
       <div className="flex items-center space-x-5">
-        <img src={item.image} alt={item.name} className="w-20 h-20 object-cover rounded-2xl shadow-inner border border-gray-100" />
+        <img 
+          src={item.thumbnail || item.image || "https://via.placeholder.com/80"} 
+          alt={item.title || item.name} 
+          className="w-20 h-20 object-cover rounded-2xl shadow-inner border border-gray-100" 
+        />
         <div>
-          <p className="font-bold text-gray-900 text-lg">{item.name}</p>
-          <p className="text-xs font-bold text-blue-600 bg-blue-50 w-max px-2 py-1 rounded mt-1">MOD: {item.model}</p>
-          <p className="text-sm text-gray-400 mt-1">${item.price.toFixed(2)} / unit</p>
+          <p className="font-bold text-gray-900 text-lg">{item.title || item.name}</p>
+          <p className="text-xs font-bold text-blue-600 bg-blue-50 w-max px-2 py-1 rounded mt-1">
+            MOD: {item.model || item.category?.toUpperCase()}
+          </p>
+          <p className="text-sm text-gray-400 mt-1">${item.price?.toFixed(2)} / unit</p>
         </div>
       </div>
     </td>
     <td className="py-6">
       <QuantityControls 
         quantity={item.quantity}
-        onDecrement={() => updateQuantity(item.id, -1)}
-        onIncrement={() => updateQuantity(item.id, 1)}
+        onDecrement={() => updateQuantity(item._id || item.id, -1)}
+        onIncrement={() => updateQuantity(item._id || item.id, 1)}
       />
     </td>
-    <td className="py-6 font-black text-gray-900">${(item.price * item.quantity).toFixed(2)}</td>
+    <td className="py-6 font-black text-gray-900">${(item.price * item.quantity)?.toFixed(2)}</td>
     <td className="px-8 py-6 text-right">
-      <button onClick={() => removeItem(item.id)} className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
+      <button 
+        onClick={() => removeItem(item._id || item.id)} 
+        className="p-2.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+      >
         <X size={20} />
       </button>
     </td>
@@ -259,9 +265,19 @@ const CartItemRow = ({ item, updateQuantity, removeItem }) => (
 
 const QuantityControls = ({ quantity, onDecrement, onIncrement }) => (
   <div className="flex items-center bg-gray-100 rounded-full w-max p-1">
-    <button onClick={onDecrement} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm hover:text-orange-500 font-bold">-</button>
+    <button 
+      onClick={onDecrement} 
+      className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm hover:text-orange-500 font-bold"
+    >
+      -
+    </button>
     <span className="w-10 text-center font-black text-sm">{quantity}</span>
-    <button onClick={onIncrement} className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm hover:text-blue-600 font-bold">+</button>
+    <button 
+      onClick={onIncrement} 
+      className="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm hover:text-blue-600 font-bold"
+    >
+      +
+    </button>
   </div>
 );
 
@@ -275,9 +291,16 @@ const CartActions = ({ couponCode, setCouponCode, clearCart, applyCoupon }) => (
         placeholder="Coupon Code" 
         className="bg-transparent px-5 py-2 outline-none flex-1 text-sm" 
       />
-      <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-xs uppercase">Apply</button>
+      <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-full font-bold text-xs uppercase">
+        Apply
+      </button>
     </form>
-    <button onClick={clearCart} className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-tighter">Clear All Items</button>
+    <button 
+      onClick={clearCart} 
+      className="text-xs font-bold text-gray-400 hover:text-red-500 uppercase tracking-tighter"
+    >
+      Clear All Items
+    </button>
   </div>
 );
 
@@ -331,7 +354,7 @@ const EmptyCart = () => (
     </div>
     <h2 className="text-3xl font-black text-gray-900 mb-2">Your cart is feeling lonely.</h2>
     <p className="text-gray-400 mb-10 max-w-md mx-auto">Looks like you haven't added anything to your cart yet. Explore our latest electronics and find something you love!</p>
-    <Link to="/shop" className="inline-flex items-center bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
+    <Link to="/" className="inline-flex items-center bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-xl shadow-blue-200">
       Start Shopping <ChevronRight size={20} className="ml-2" />
     </Link>
   </div>
