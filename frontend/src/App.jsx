@@ -8,6 +8,7 @@ import Homepage from './components/Homepage';
 import Login from './components/Login';
 import Register from './components/Register';
 import PageNotFound from './Pages/PageNotFound';
+import OrderSuccess from './components/OrderSuccess';
 
 
 const App = () => {
@@ -27,6 +28,10 @@ const App = () => {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/order-success" element={<OrderSuccess />} />
+
+
+          
         {/* 404 Route */}
         <Route path="*" element={<PageNotFound/>} />
       </Routes>
