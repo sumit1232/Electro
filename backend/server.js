@@ -3,12 +3,16 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 require('dotenv').config();
 const User = require('./models/User');
+const productRoutes = require('./routes/products');
 
 const app = express();
 
 // Middleware
 app.use(express.json()); 
 app.use(cors()); 
+
+//Routes
+app.use('/api/products', productRoutes);
 
 // Global unhandled rejection handler
 process.on('unhandledRejection', (err) => {

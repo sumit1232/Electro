@@ -17,7 +17,7 @@ const Homepage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('https://dummyjson.com/products?limit=8');
+        const response = await axios.get('http://localhost:5000/api/products?limit=8');
         // dummyjson returns { products: [...], total: 100, ... }
         setProducts(response.data.products);
       } catch (error) {
