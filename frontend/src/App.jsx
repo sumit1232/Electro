@@ -5,6 +5,9 @@ import CartPage from './components/CartPage';
 import CheckoutPage from './components/CheckoutPage';
 import ContactPage from './Pages/ContactPage';
 import Homepage from './components/Homepage';
+import Login from './components/Login';
+import Register from './components/Register';
+import PageNotFound from './Pages/PageNotFound';
 
 
 const App = () => {
@@ -22,9 +25,10 @@ const App = () => {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/contact" element={<ContactPage />} />
-
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         {/* 404 Route */}
-        <Route path="*" element={<div className="text-center py-20 text-2xl">404 - Page Not Found</div>} />
+        <Route path="*" element={<PageNotFound/>} />
       </Routes>
     </Router>
   
